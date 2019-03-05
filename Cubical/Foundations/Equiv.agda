@@ -43,8 +43,10 @@ equiv-proof (isPropIsEquiv f p q i) y =
 equivEq : ∀ {ℓ ℓ'} {A : Set ℓ} {B : Set ℓ'} (e f : A ≃ B) → (h : e .fst ≡ f .fst) → e ≡ f
 equivEq e f h = λ i → (h i) , isProp→PathP isPropIsEquiv h (e .snd) (f .snd) i
 
+
 isoToEquiv : ∀ {ℓ ℓ'} {A : Set ℓ} {B : Set ℓ'} → Iso A B →  A ≃ B
 isoToEquiv i = _ , isoToIsEquiv i
+
 
 module _ {ℓ ℓ'} {A : Set ℓ} {B : Set ℓ'} (w : A ≃ B) where
   invEq : B → A
@@ -84,3 +86,35 @@ isEquivTransport {A = A} =
 
 transportEquiv : ∀ {ℓ} {A B : Set ℓ} → A ≡ B → A ≃ B
 transportEquiv p = (transport p , isEquivTransport p)
+
+congEquiv : ∀ {ℓ ℓ'} {A : Set ℓ} {B : Set ℓ'} {x y : A} (e : A ≃ B) → (x ≡ y) ≃ (e .fst x ≡ e .fst y)
+congEquiv {A = A} {B} {x} {y} e = isoToEquiv (iso intro elim {!!} elim-intro)
+  where
+    f : A → B
+    f = e .fst
+
+    g : B → A
+    g = invEq e
+
+    intro : x ≡ y → e .fst x ≡ e .fst y
+    intro = cong f
+
+    elim : e .fst x ≡ e .fst y → x ≡ y
+    elim p i = hcomp (λ j → \ { (i = i0) → secEq e x j
+                               ; (i = i1) → secEq e y j
+                            }) (cong g p i)
+
+    intro-elim : ∀ p → intro (elim p) ≡ p
+    intro-elim p i j = hcomp (λ k → \ { (i = i0) → {!f !}
+                                       ; (i = i1) → p j
+                                       ; (j = i0) → retEq e (f x) (i ∨ k)
+                                       ; (j = i1) → retEq e (f y) (i ∨ k)
+                                      }) (retEq e (p j) i)
+
+    elim-intro : ∀ p → elim (intro p) ≡ p
+    elim-intro p i j = hcomp (λ k → \ { (i = i0) → hfill (λ l → λ { (j = i0) → secEq e x l ; (j = i1) → secEq e y l })
+                                                     (inc (cong (λ z → g (f z)) p j)) k
+                                       ; (i = i1) → p j
+                                       ; (j = i0) → secEq e x (i ∨ k)
+                                       ; (j = i1) → secEq e y (i ∨ k)
+                                      }) (secEq e (p j) i)
